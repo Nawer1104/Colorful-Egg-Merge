@@ -1,0 +1,68 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Merge : MonoBehaviour
+{
+    int ID;
+    public GameObject MergedObject;
+    Transform Block1;
+    Transform Block2;
+    public float Distance;
+    public float MergeSpeed;
+    public GameObject vfxMerge;
+    bool CanMerge;
+
+    void Start()
+    {
+        ID = GetInstanceID();
+    }
+
+    private void FixedUpdate()
+    {
+        MoveTowards();
+    }
+    public void MoveTowards()
+    {
+        if (CanMerge)
+        {
+            transform.position = Vector2.MoveTowards(Block1.position, Block2.position, MergeSpeed);
+            if (Vector2.Distance(Block1.position, Block2.position) < Distance)
+            {
+                if (ID < Block2.gameObject.GetComponent<Merge>().ID) { return; }
+                GameObject vfx = Instantiate(vfxMerge, transform.position, Quaternion.identity) as GameObject;
+                Destroy(vfx, 1f);
+
+                if (MergedObject != null)
+                {
+                    GameObject O = Instantiate(MergedObject, transform.position, Quaternion.identity) as GameObject;
+                    O.transform.SetParent(GameManager.Instance.levels[GameManager.Instance.GetCurrentIndex()].gameObject.transform);
+                    GameManager.Instance.levels[GameManager.Instance.GetCurrentIndex()].gameObjects.Add(O);
+                }
+                else
+                {
+                    GameManager.Instance.levels[GameManager.Instance.GetCurrentIndex()].gameObjects.Remove(gameObject);
+                    GameManager.Instance.levels[GameManager.Instance.GetCurrentIndex()].gameObjects.Remove(Block2.gameObject);
+                    GameManager.Instance.CheckLevelUp();
+                }
+                Destroy(Block2.gameObject);
+                Destroy(gameObject);
+            }
+        }
+    }
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (collision.gameObject.CompareTag("Block"))
+        {
+            if (collision.gameObject.GetComponent<SpriteRenderer>().sprite == GetComponent<SpriteRenderer>().sprite)
+            {
+                Block1 = transform;
+                Block2 = collision.transform;
+                CanMerge = true;
+                Destroy(collision.gameObject.GetComponent<Rigidbody2D>());
+                Destroy(GetComponent<Rigidbody2D>());
+            }
+        }
+
+    }
+}
